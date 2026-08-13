@@ -10,78 +10,48 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useUser } from "@clerk/nextjs";
 import type { CourseModule } from "./types";
+import {
+  EMPTY_PROGRESS,
+  isProgressState,
+  mergeProgress,
+  type ProgressState,
+  type QuizResult,
+} from "./progressState";
 
-export type QuizResult = {
-  score: number;
-  total: number;
-  /** chosen choice index per question */
-  answers: number[];
-  at: string; // ISO date
-};
-
-export type ProgressState = {
-  v: 1;
-  /** keys are `${moduleId}:${sectionId}` */
-  sections: Record<string, string>; // value = ISO date completed
-  /** keys are `${moduleId}:${sectionId}` (quiz sections) */
-  quizzes: Record<string, QuizResult>;
-  /** keys are `${moduleId}:${problemId}` */
-  problems: Record<string, string>;
-  /** per-module lab notebook, keyed by module id */
-  notes: Record<string, string>;
-};
-
-const EMPTY: ProgressState = {
-  v: 1,
-  sections: {},
-  quizzes: {},
-  problems: {},
-  notes: {},
-};
+export { mergeProgress } from "./progressState";
+export type { ProgressState, QuizResult } from "./progressState";
 
 const STORAGE_KEY = "interpretable.progress.v1";
 
 function load(): ProgressState {
-  if (typeof window === "undefined") return EMPTY;
+  if (typeof window === "undefined") return EMPTY_PROGRESS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return EMPTY;
-    const parsed = JSON.parse(raw) as ProgressState;
-    if (parsed.v !== 1) return EMPTY;
-    return { ...EMPTY, ...parsed };
+    if (!raw) return EMPTY_PROGRESS;
+    const parsed = JSON.parse(raw);
+    if (!isProgressState(parsed)) return EMPTY_PROGRESS;
+    return { ...EMPTY_PROGRESS, ...parsed };
   } catch {
-    return EMPTY;
+    return EMPTY_PROGRESS;
   }
 }
 
-/** Merge two states, most-recent-wins per key. Used for cross-device sync. */
-export function mergeProgress(a: ProgressState, b: ProgressState): ProgressState {
-  const newerQuiz = (x?: QuizResult, y?: QuizResult) => {
-    if (!x) return y;
-    if (!y) return x;
-    return x.at >= y.at ? x : y;
-  };
-  const mergeDates = (
-    x: Record<string, string>,
-    y: Record<string, string>,
-  ): Record<string, string> => ({ ...x, ...y });
-  const quizzes: Record<string, QuizResult> = { ...a.quizzes };
-  for (const [k, v] of Object.entries(b.quizzes)) {
-    quizzes[k] = newerQuiz(quizzes[k], v)!;
+function persist(state: ProgressState) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // storage full / private mode: keep in-memory state
   }
-  return {
-    v: 1,
-    sections: mergeDates(a.sections, b.sections),
-    problems: mergeDates(a.problems, b.problems),
-    quizzes,
-    notes: { ...a.notes, ...b.notes },
-  };
 }
+
+type SyncStatus = "local" | "syncing" | "synced" | "error";
 
 type ProgressApi = {
   state: ProgressState;
   ready: boolean;
+  syncStatus: SyncStatus;
   isSectionDone: (moduleId: string, sectionId: string) => boolean;
   toggleSection: (moduleId: string, sectionId: string, done?: boolean) => void;
   isProblemDone: (moduleId: string, problemId: string) => boolean;
@@ -97,10 +67,12 @@ type ProgressApi = {
 const Ctx = createContext<ProgressApi | null>(null);
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<ProgressState>(EMPTY);
+  const [state, setState] = useState<ProgressState>(EMPTY_PROGRESS);
   const [ready, setReady] = useState(false);
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
+  const { isSignedIn } = useUser();
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconciled = useRef(false);
 
   // hydrate from localStorage after mount (SSR-safe)
   useEffect(() => {
@@ -113,22 +85,89 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const update = useCallback((fn: (s: ProgressState) => ProgressState) => {
-    setState((prev) => {
-      const next = fn(prev);
+  // push current state to the server, debounced; server merges and returns
+  const schedulePush = useCallback(() => {
+    if (!reconciled.current) return;
+    if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(async () => {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        setSyncStatus("syncing");
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        const body = raw ?? JSON.stringify(EMPTY_PROGRESS);
+        const res = await fetch("/api/progress", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body,
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        const merged = await res.json();
+        if (isProgressState(merged)) {
+          persist(merged);
+          setState(merged);
+        }
+        setSyncStatus("synced");
       } catch {
-        // storage full / private mode: keep in-memory state
+        setSyncStatus("error");
       }
-      return next;
-    });
+    }, 1500);
   }, []);
+
+  // on sign-in: pull server state, merge with local, persist both ways
+  useEffect(() => {
+    if (!ready) return;
+    if (!isSignedIn) {
+      reconciled.current = false;
+      setSyncStatus("local");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setSyncStatus("syncing");
+        const res = await fetch("/api/progress");
+        if (!res.ok) throw new Error(String(res.status));
+        const remote = await res.json();
+        if (cancelled) return;
+        const local = load();
+        const merged = isProgressState(remote)
+          ? mergeProgress(remote, local)
+          : local;
+        persist(merged);
+        setState(merged);
+        reconciled.current = true;
+        // write the merged result back so other devices see it
+        await fetch("/api/progress", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(merged),
+        });
+        if (!cancelled) setSyncStatus("synced");
+      } catch {
+        if (!cancelled) setSyncStatus("error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, ready]);
+
+  const update = useCallback(
+    (fn: (s: ProgressState) => ProgressState) => {
+      setState((prev) => {
+        const next = fn(prev);
+        persist(next);
+        return next;
+      });
+      schedulePush();
+    },
+    [schedulePush],
+  );
 
   const api = useMemo<ProgressApi>(
     () => ({
       state,
       ready,
+      syncStatus,
       isSectionDone: (m, s) => Boolean(state.sections[`${m}:${s}`]),
       toggleSection: (m, s, done) =>
         update((prev) => {
@@ -164,9 +203,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ).length;
         return { done, total };
       },
-      resetAll: () => update(() => EMPTY),
+      resetAll: () => {
+        // also clear the synced copy, otherwise it merges right back
+        fetch("/api/progress", { method: "DELETE" }).catch(() => {});
+        update(() => EMPTY_PROGRESS);
+      },
     }),
-    [state, ready, update],
+    [state, ready, syncStatus, update],
   );
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

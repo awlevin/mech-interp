@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import "./globals.css";
 import { ProgressProvider } from "@/lib/progress";
 import { Sidebar } from "@/components/Sidebar";
@@ -35,10 +37,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ProgressProvider>
-          <Sidebar />
-          <main className="lg:pl-72">{children}</main>
-        </ProgressProvider>
+        <ClerkProvider appearance={{ theme: dark }}>
+          <ProgressProvider>
+            <Sidebar />
+            <main className="lg:pl-72">{children}</main>
+          </ProgressProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

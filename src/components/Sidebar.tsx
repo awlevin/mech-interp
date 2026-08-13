@@ -6,6 +6,7 @@ import { useState } from "react";
 import { parts } from "@/lib/parts";
 import { getModule, modulesForPart } from "@/lib/registry";
 import { useProgress } from "@/lib/progress";
+import { AccountButton } from "./AccountButton";
 
 function ModuleLink({
   slug,
@@ -108,6 +109,9 @@ export function Sidebar() {
         >
           Profile & progress
         </Link>
+        <div className="mt-2">
+          <AccountButton />
+        </div>
       </div>
     </nav>
   );

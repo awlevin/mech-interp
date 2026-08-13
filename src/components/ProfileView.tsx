@@ -54,8 +54,9 @@ export function ProfileView() {
         Profile &amp; progress
       </h1>
       <p className="mt-2 text-[14px] leading-6 text-ink-muted">
-        Progress is saved on this device. Use export/import to move it between
-        devices — account sync is coming.
+        Progress saves on this device instantly. Sign in (sidebar) and it also
+        syncs to your account, so phone and desktop share one history.
+        Export/import is the manual fallback.
       </p>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
