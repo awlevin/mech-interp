@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parts } from "@/lib/parts";
 import { getModule, modulesForPart } from "@/lib/registry";
 import { useProgress } from "@/lib/progress";
@@ -146,6 +146,17 @@ export function Sidebar() {
     setOpen(false);
   }
 
+  // Lock the page behind the open menu: without this both the overlay and
+  // the page scroll, and reaching the menu's end starts moving the page.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   const plainLink = (href: string, label: string) => {
     const reachable = canVisit(href);
     return (
@@ -173,12 +184,14 @@ export function Sidebar() {
 
   const nav = (
     <nav className="space-y-5">
+      {/* The mobile top bar already shows the brand; repeating it in the
+          overlay reads as a second navbar. Desktop sidebar keeps it. */}
       <Link
         href="/"
         onClick={() => {
           if (pathname === "/") close();
         }}
-        className="block px-2 text-[15px] font-bold tracking-tight text-ink"
+        className="hidden px-2 text-[15px] font-bold tracking-tight text-ink lg:block"
       >
         Interpretable
         <span className="mt-0.5 block text-[11px] font-normal leading-4 text-ink-muted">
@@ -231,7 +244,7 @@ export function Sidebar() {
         </button>
       </div>
       {open ? (
-        <div className="fixed inset-0 z-30 overflow-y-auto bg-background px-4 pb-10 pt-16 lg:hidden">
+        <div className="fixed inset-0 z-30 overflow-y-auto overscroll-contain bg-background px-4 pb-10 pt-16 lg:hidden">
           {nav}
         </div>
       ) : null}
