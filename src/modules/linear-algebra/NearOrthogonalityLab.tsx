@@ -233,7 +233,7 @@ export function NearOrthogonalityLab() {
 
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full max-w-[500px]"
+          className="order-first w-full max-w-[500px] lg:order-none"
           role="img"
           aria-label={`Histogram of pairwise cosine similarities for ${n} random unit vectors in ${d} dimensions; RMS cosine ${rms.toFixed(3)}`}
         >

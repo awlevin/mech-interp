@@ -48,16 +48,18 @@ export function SoftmaxExplorer() {
       }
     >
       <div className="grid gap-5 sm:grid-cols-[220px_1fr]">
-        <div className="space-y-3">
-          <Slider
-            label="Temperature T"
-            value={temp}
-            min={0.05}
-            max={4}
-            step={0.05}
-            onChange={setTemp}
-            format={(v) => v.toFixed(2)}
-          />
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:block sm:space-y-3">
+          <div className="col-span-2">
+            <Slider
+              label="Temperature T"
+              value={temp}
+              min={0.05}
+              max={4}
+              step={0.05}
+              onChange={setTemp}
+              format={(v) => v.toFixed(2)}
+            />
+          </div>
           {TOKENS.map((tok, i) => (
             <Slider
               key={tok}
@@ -75,7 +77,7 @@ export function SoftmaxExplorer() {
         </div>
         <svg
           viewBox={`0 0 ${W} ${TOKENS.length * (barH + gap)}`}
-          className="w-full max-w-[460px] self-center"
+          className="order-first w-full max-w-[460px] self-center sm:order-none"
           role="img"
           aria-label="Softmax probabilities per token"
         >

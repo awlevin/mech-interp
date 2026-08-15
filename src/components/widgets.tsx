@@ -26,7 +26,7 @@ export function WidgetShell({
 }) {
   return (
     <div className="my-6 overflow-hidden rounded-xl border border-borderline-strong bg-surface-1">
-      <div className="border-b border-borderline px-4 py-3">
+      <div className="border-b border-borderline px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-accent" />
           <span className="text-sm font-semibold text-ink">{title}</span>
@@ -35,9 +35,9 @@ export function WidgetShell({
           <div className="mt-1 text-[13px] leading-5 text-ink-muted">{subtitle}</div>
         ) : null}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-3 sm:p-4">{children}</div>
       {footer ? (
-        <div className="border-t border-borderline px-4 py-3 text-[13px] leading-5 text-ink-muted">
+        <div className="border-t border-borderline px-3 py-2.5 text-[13px] leading-5 text-ink-muted sm:px-4 sm:py-3">
           {footer}
         </div>
       ) : null}
@@ -64,9 +64,11 @@ export function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-medium text-ink-secondary">{label}</span>
-        <span className="font-mono text-[13px] text-ink">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12px] font-medium text-ink-secondary sm:text-[13px]">
+          {label}
+        </span>
+        <span className="font-mono text-[12px] text-ink sm:text-[13px]">
           {format ? format(value) : value}
         </span>
       </div>
@@ -77,7 +79,7 @@ export function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-2 accent-[var(--accent)]"
+        className="w-full cursor-pointer"
       />
     </label>
   );
@@ -99,7 +101,7 @@ export function SegmentedControl<T extends string>({
       {label ? (
         <div className="mb-1 text-[13px] font-medium text-ink-secondary">{label}</div>
       ) : null}
-      <div className="inline-flex rounded-lg border border-borderline bg-surface-2 p-0.5">
+      <div className="inline-flex flex-wrap rounded-lg border border-borderline bg-surface-2 p-0.5">
         {options.map((o) => (
           <button
             key={o.value}
@@ -135,7 +137,7 @@ export function WidgetButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-40 ${
+      className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors disabled:opacity-40 sm:px-3 sm:py-1.5 sm:text-[13px] ${
         primary
           ? "bg-accent text-white hover:brightness-110"
           : "border border-borderline-strong bg-surface-2 text-ink-secondary hover:text-ink"
