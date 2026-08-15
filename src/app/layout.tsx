@@ -4,9 +4,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import "./globals.css";
 import { ProgressProvider } from "@/lib/progress";
+import { OfflineProvider } from "@/lib/offline";
 import { Sidebar } from "@/components/Sidebar";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,10 +41,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider appearance={{ theme: dark }}>
           <ProgressProvider>
-            <Sidebar />
-            <main className="lg:pl-72">{children}</main>
-            <OfflineBanner />
-            <ServiceWorkerRegistrar />
+            <OfflineProvider>
+              <Sidebar />
+              <main className="lg:pl-72">{children}</main>
+              <OfflineBanner />
+            </OfflineProvider>
           </ProgressProvider>
         </ClerkProvider>
       </body>
