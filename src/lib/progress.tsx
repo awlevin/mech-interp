@@ -78,8 +78,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   // does not cover — we track connectivity ourselves and retry on reconnect.
   const isOffline = useOffline();
   const offlineRef = useRef(false);
-  offlineRef.current = isOffline;
   const [pullTick, setPullTick] = useState(0);
+
+  useEffect(() => {
+    offlineRef.current = isOffline;
+  }, [isOffline]);
 
   // hydrate from localStorage after mount (SSR-safe)
   useEffect(() => {
