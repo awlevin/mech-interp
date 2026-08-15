@@ -5,6 +5,8 @@ import { dark } from "@clerk/themes";
 import "./globals.css";
 import { ProgressProvider } from "@/lib/progress";
 import { Sidebar } from "@/components/Sidebar";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +43,8 @@ export default function RootLayout({
           <ProgressProvider>
             <Sidebar />
             <main className="lg:pl-72">{children}</main>
+            <OfflineBanner />
+            <ServiceWorkerRegistrar />
           </ProgressProvider>
         </ClerkProvider>
       </body>
