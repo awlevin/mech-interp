@@ -1,8 +1,8 @@
 // Offline caching for the course. Compiled by Next.js into
 // /_next/static/service-worker/ and registered with scope "/" (see
-// ServiceWorkerRegistrar). Course content is fully static, so every page can
-// be precached and served when the network is gone; /api/* (progress sync)
-// is deliberately never intercepted.
+// OfflineProvider in lib/offline.tsx). Course content is fully static, so
+// every page can be precached and served when the network is gone; /api/*
+// (progress sync) is deliberately never intercepted.
 
 const VERSION = "v1";
 const PAGE_CACHE = `pages-${VERSION}`;
@@ -33,7 +33,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   const data = event.data;
   if (data && data.type === "CACHE_PAGES" && Array.isArray(data.urls)) {
-    event.waitUntil(warmPages(data.urls));
+    event.waitUntil(warmPages(data.urls, Boolean(data.force)));
   }
 });
 
@@ -69,6 +69,11 @@ function pageKey(url) {
   return u.origin + u.pathname;
 }
 
+async function broadcast(message) {
+  const clients = await self.clients.matchAll({ includeUncontrolled: true });
+  for (const client of clients) client.postMessage(message);
+}
+
 async function cacheFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(req, { ignoreVary: true });
@@ -97,32 +102,59 @@ async function networkFirst(req, cacheName) {
   }
 }
 
-async function warmPages(urls) {
+/**
+ * Download every course page (HTML + router payload + referenced assets)
+ * into the caches, reporting progress to all open tabs. `force` skips the
+ * hourly freshness marker — used by the explicit "download for offline"
+ * button and by retries after a partial download.
+ */
+async function warmPages(urls, force) {
   const pageCache = await caches.open(PAGE_CACHE);
 
-  const marker = await pageCache.match(WARM_MARKER);
-  if (marker) {
-    const at = Number(await marker.text());
-    if (Date.now() - at < WARM_INTERVAL_MS) return;
+  if (!force) {
+    const marker = await pageCache.match(WARM_MARKER);
+    if (marker) {
+      const at = Number(await marker.text());
+      if (Date.now() - at < WARM_INTERVAL_MS) return;
+    }
   }
 
   const rscCache = await caches.open(RSC_CACHE);
+  const total = urls.length;
+  let settled = 0;
+  let cached = 0;
+
   await Promise.allSettled(
     urls.map(async (url) => {
       const key = pageKey(url);
-      const res = await fetch(url);
-      if (res.ok) {
-        await pageCache.put(key, res.clone());
-        await cacheAssetsFromHtml(await res.text());
+      let ok = false;
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          await pageCache.put(key, res.clone());
+          await cacheAssetsFromHtml(await res.text());
+          // The router payload makes soft navigation to never-visited
+          // pages work after an offline reload.
+          const rscRes = await fetch(url, { headers: { RSC: "1" } });
+          if (rscRes.ok) {
+            await rscCache.put(key, rscRes);
+            ok = true;
+          }
+        }
+      } finally {
+        settled += 1;
+        if (ok) cached += 1;
+        broadcast({ type: "PRECACHE_PROGRESS", settled, cached, total });
       }
-      // Also warm the router payload so soft navigation to never-visited
-      // pages works after an offline reload.
-      const rscRes = await fetch(url, { headers: { RSC: "1" } });
-      if (rscRes.ok) await rscCache.put(key, rscRes);
     }),
   );
 
-  await pageCache.put(WARM_MARKER, new Response(String(Date.now())));
+  // Only mark the warm pass as done when everything made it: a partial
+  // download (e.g. connection dropped halfway) must stay retryable.
+  if (cached === total) {
+    await pageCache.put(WARM_MARKER, new Response(String(Date.now())));
+  }
+  broadcast({ type: "PRECACHE_COMPLETE", cached, total });
 }
 
 /** Cache every build asset a page's HTML references (scripts, CSS, fonts). */
