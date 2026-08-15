@@ -58,6 +58,45 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Range inputs: one compact custom track + thumb everywhere. Without the
+   thumb pseudo-elements, mobile Safari pairs its oversized native thumb
+   with our appearance-none track and slider rows balloon on phones. The
+   input itself stays 20px tall as the touch target; the drawn track is 6px. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  touch-action: manipulation;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--surface-2);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: none;
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--surface-2);
+}
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
 body {
   background: var(--background);
   color: var(--text-primary);

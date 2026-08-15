@@ -276,7 +276,9 @@ export function MatrixMapExplorer() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* On phones the panels come first and sit side by side, so the
+            picture and the sliders share the first screen. */}
+        <div className="order-first grid grid-cols-2 gap-3 sm:gap-4 lg:order-none">
           <Panel
             idPrefix="mm-in"
             label="input space"

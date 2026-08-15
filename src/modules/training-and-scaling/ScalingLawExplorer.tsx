@@ -219,7 +219,7 @@ export function ScalingLawExplorer() {
           </div>
         </div>
 
-        <div>
+        <div className="order-first sm:order-none">
           <svg
             viewBox={`0 0 ${W} ${H}`}
             className="w-full max-w-[460px]"
