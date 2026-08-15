@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useOffline } from "next/offline";
@@ -64,8 +65,32 @@ type OfflineCourseApi = {
 
 const Ctx = createContext<OfflineCourseApi | null>(null);
 
+function subscribeOnline(callback: () => void) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+/**
+ * `useOffline` flips back to "online" whenever a framework fetch succeeds —
+ * including ones the service worker answered from cache while the network is
+ * down. Folding in `navigator.onLine` keeps airplane mode detected even then.
+ */
+function useIsOffline(): boolean {
+  const frameworkOffline = useOffline();
+  const browserOnline = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
+  return frameworkOffline || !browserOnline;
+}
+
 export function OfflineProvider({ children }: { children: ReactNode }) {
-  const isOffline = useOffline();
+  const isOffline = useIsOffline();
   const [supported, setSupported] = useState(false);
   const [downloadState, setDownloadState] = useState<DownloadState>("idle");
   const [progress, setProgress] = useState({ settled: 0, total: 0 });
