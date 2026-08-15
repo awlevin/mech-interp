@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useOffline } from "next/offline";
 import type { CourseModule } from "./types";
 import {
   EMPTY_PROGRESS,
@@ -46,7 +47,7 @@ function persist(state: ProgressState) {
   }
 }
 
-type SyncStatus = "local" | "syncing" | "synced" | "error";
+type SyncStatus = "local" | "syncing" | "synced" | "offline" | "error";
 
 type ProgressApi = {
   state: ProgressState;
@@ -73,6 +74,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const { isSignedIn } = useUser();
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconciled = useRef(false);
+  // Progress sync uses plain fetch(), which the framework's offline retry
+  // does not cover — we track connectivity ourselves and retry on reconnect.
+  const isOffline = useOffline();
+  const offlineRef = useRef(false);
+  offlineRef.current = isOffline;
+  const [pullTick, setPullTick] = useState(0);
 
   // hydrate from localStorage after mount (SSR-safe)
   useEffect(() => {
@@ -107,7 +114,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         }
         setSyncStatus("synced");
       } catch {
-        setSyncStatus("error");
+        setSyncStatus(offlineRef.current ? "offline" : "error");
       }
     }, 1500);
   }, []);
@@ -143,13 +150,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         });
         if (!cancelled) setSyncStatus("synced");
       } catch {
-        if (!cancelled) setSyncStatus("error");
+        if (!cancelled) setSyncStatus(offlineRef.current ? "offline" : "error");
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isSignedIn, ready]);
+  }, [isSignedIn, ready, pullTick]);
+
+  // When connectivity returns, retry whatever sync step was interrupted.
+  useEffect(() => {
+    if (isOffline || !ready || !isSignedIn) return;
+    if (syncStatus !== "offline" && syncStatus !== "error") return;
+    if (reconciled.current) schedulePush();
+    else setPullTick((t) => t + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOffline]);
 
   const update = useCallback(
     (fn: (s: ProgressState) => ProgressState) => {

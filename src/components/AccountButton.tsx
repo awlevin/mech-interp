@@ -6,6 +6,7 @@ import { useProgress } from "@/lib/progress";
 const SYNC_LABEL: Record<string, { text: string; cls: string }> = {
   syncing: { text: "syncing…", cls: "text-warn" },
   synced: { text: "synced", cls: "text-good" },
+  offline: { text: "offline — saved locally", cls: "text-warn" },
   error: { text: "sync error — will retry", cls: "text-critical" },
   local: { text: "", cls: "" },
 };
