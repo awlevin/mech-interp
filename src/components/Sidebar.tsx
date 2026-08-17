@@ -24,9 +24,13 @@ function ModuleLink({
 }) {
   const pathname = usePathname();
   const { canVisit } = useOfflineCourse();
-  const href = `/learn/${slug}`;
-  const active = pathname === href;
-  const reachable = canVisit(href);
+  const { moduleHref } = useProgress();
+  const mod = getModule(slug);
+  const path = `/learn/${slug}`;
+  const active = pathname === path;
+  const reachable = canVisit(path);
+  // Deep-link to the section in flight, but match routes on the path alone.
+  const href = mod ? moduleHref(mod) : path;
   return (
     <Link
       href={href}
@@ -64,13 +68,18 @@ function Dot({ slug }: { slug: string }) {
   const { moduleProgress } = useProgress();
   const mod = getModule(slug);
   if (!mod || mod.sections.length === 0) return null;
-  const { done, total } = moduleProgress(mod);
-  if (done === 0) return null;
-  const complete = done === total;
+  const { done, total, status } = moduleProgress(mod);
+  if (status === "not-started") return null;
   return (
     <span
-      className={`h-1.5 w-1.5 rounded-full ${complete ? "bg-good" : "bg-series-4"}`}
-      title={`${done}/${total} sections`}
+      className={`h-1.5 w-1.5 rounded-full ${
+        status === "complete" ? "bg-good" : "bg-series-4"
+      }`}
+      title={
+        status === "complete"
+          ? "Complete"
+          : `In progress · ${done}/${total} sections`
+      }
     />
   );
 }

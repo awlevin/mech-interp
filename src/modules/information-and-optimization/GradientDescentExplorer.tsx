@@ -62,7 +62,6 @@ export function GradientDescentExplorer() {
       pts.push(`${cx.toFixed(1)},${cy.toFixed(1)}`);
     }
     return pts.join(" ");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [bx, by] = toPx(x, loss(x));

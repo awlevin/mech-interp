@@ -13,6 +13,7 @@ import {
 import { useUser } from "@clerk/nextjs";
 import { useOffline } from "next/offline";
 import type { CourseModule } from "./types";
+import { modules } from "./registry";
 import {
   EMPTY_PROGRESS,
   isProgressState,
@@ -49,21 +50,95 @@ function persist(state: ProgressState) {
 
 type SyncStatus = "local" | "syncing" | "synced" | "offline" | "error";
 
+export type ModuleStatus = "not-started" | "in-progress" | "complete";
+
+export type ModuleProgress = {
+  done: number;
+  /** sections opened, whether or not they are complete */
+  started: number;
+  total: number;
+  status: ModuleStatus;
+  /**
+   * Where to drop the reader back in: the first section they have not
+   * completed. Undefined when the module is untouched or finished — both
+   * belong at the top of the page.
+   */
+  resumeSectionId?: string;
+};
+
 type ProgressApi = {
   state: ProgressState;
   ready: boolean;
   syncStatus: SyncStatus;
   isSectionDone: (moduleId: string, sectionId: string) => boolean;
   toggleSection: (moduleId: string, sectionId: string, done?: boolean) => void;
+  isSectionStarted: (moduleId: string, sectionId: string) => boolean;
+  /** Record a first visit to a section. Idempotent — later visits are no-ops. */
+  markStarted: (moduleId: string, sectionId: string) => void;
   isProblemDone: (moduleId: string, problemId: string) => boolean;
   toggleProblem: (moduleId: string, problemId: string) => void;
   quizResult: (moduleId: string, sectionId: string) => QuizResult | undefined;
   saveQuizResult: (moduleId: string, sectionId: string, r: QuizResult) => void;
   note: (moduleId: string) => string;
   saveNote: (moduleId: string, text: string) => void;
-  moduleProgress: (m: CourseModule) => { done: number; total: number };
+  moduleProgress: (m: CourseModule) => ModuleProgress;
+  /** Module link that lands on the section in progress, when there is one. */
+  moduleHref: (m: CourseModule) => string;
+  /** The module to offer as "continue", most recently touched first. */
+  continueModule: () => CourseModule | undefined;
   resetAll: () => void;
 };
+
+function moduleProgressOf(
+  state: ProgressState,
+  mod: CourseModule,
+): ModuleProgress {
+  const total = mod.sections.length;
+  const done = mod.sections.filter((s) =>
+    Boolean(state.sections[`${mod.id}:${s.id}`]),
+  ).length;
+  const started = mod.sections.filter(
+    (s) =>
+      Boolean(state.started[`${mod.id}:${s.id}`]) ||
+      Boolean(state.sections[`${mod.id}:${s.id}`]),
+  ).length;
+  const status: ModuleStatus =
+    total > 0 && done === total
+      ? "complete"
+      : started > 0
+        ? "in-progress"
+        : "not-started";
+  const resumeSectionId =
+    status === "in-progress"
+      ? mod.sections.find((s) => !state.sections[`${mod.id}:${s.id}`])?.id
+      : undefined;
+  return { done, started, total, status, resumeSectionId };
+}
+
+/**
+ * The module to offer as "continue": the most recently touched one that is
+ * still unfinished, falling back to the first module never opened.
+ */
+function continueModuleOf(state: ProgressState): CourseModule | undefined {
+  const touchedAt = new Map<string, string>();
+  for (const source of [state.started, state.sections]) {
+    for (const [key, at] of Object.entries(source)) {
+      const moduleId = key.slice(0, key.indexOf(":"));
+      const cur = touchedAt.get(moduleId);
+      if (!cur || at > cur) touchedAt.set(moduleId, at);
+    }
+  }
+  const unfinished = modules.filter(
+    (m) =>
+      m.status === "ready" &&
+      m.sections.length > 0 &&
+      moduleProgressOf(state, m).status !== "complete",
+  );
+  const inProgress = unfinished
+    .filter((m) => touchedAt.has(m.id))
+    .sort((a, b) => (touchedAt.get(a.id)! < touchedAt.get(b.id)! ? 1 : -1));
+  return inProgress[0] ?? unfinished[0];
+}
 
 const Ctx = createContext<ProgressApi | null>(null);
 
@@ -112,8 +187,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error(String(res.status));
         const merged = await res.json();
         if (isProgressState(merged)) {
-          persist(merged);
-          setState(merged);
+          // Fill in fields added after this account last synced, so readers
+          // of the state never meet an undefined map.
+          const next = { ...EMPTY_PROGRESS, ...merged };
+          persist(next);
+          setState(next);
         }
         setSyncStatus("synced");
       } catch {
@@ -126,8 +204,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     if (!isSignedIn) {
+      // Signed-out status is derived at render, not stored.
       reconciled.current = false;
-      setSyncStatus("local");
       return;
     }
     let cancelled = false;
@@ -182,11 +260,37 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     [schedulePush],
   );
 
+  // Latest state for callbacks that must stay referentially stable — an
+  // effect-driven writer re-runs whenever its callback identity changes.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const markStarted = useCallback(
+    (moduleId: string, sectionId: string) => {
+      // Guard on the current state so revisiting a section never writes,
+      // and never schedules a sync round-trip.
+      const key = `${moduleId}:${sectionId}`;
+      const now = stateRef.current;
+      if (now.started[key] || now.sections[key]) return;
+      update((prev) =>
+        prev.started[key]
+          ? prev
+          : {
+              ...prev,
+              started: { ...prev.started, [key]: new Date().toISOString() },
+            },
+      );
+    },
+    [update],
+  );
+
   const api = useMemo<ProgressApi>(
     () => ({
       state,
       ready,
-      syncStatus,
+      syncStatus: isSignedIn ? syncStatus : "local",
       isSectionDone: (m, s) => Boolean(state.sections[`${m}:${s}`]),
       toggleSection: (m, s, done) =>
         update((prev) => {
@@ -197,6 +301,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           else delete sections[key];
           return { ...prev, sections };
         }),
+      isSectionStarted: (m, s) => Boolean(state.started[`${m}:${s}`]),
+      markStarted,
       isProblemDone: (m, p) => Boolean(state.problems[`${m}:${p}`]),
       toggleProblem: (m, p) =>
         update((prev) => {
@@ -215,20 +321,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       note: (m) => state.notes[m] ?? "",
       saveNote: (m, text) =>
         update((prev) => ({ ...prev, notes: { ...prev.notes, [m]: text } })),
-      moduleProgress: (mod) => {
-        const total = mod.sections.length;
-        const done = mod.sections.filter((s) =>
-          Boolean(state.sections[`${mod.id}:${s.id}`]),
-        ).length;
-        return { done, total };
+      moduleProgress: (mod) => moduleProgressOf(state, mod),
+      moduleHref: (mod) => {
+        const { resumeSectionId } = moduleProgressOf(state, mod);
+        return resumeSectionId
+          ? `/learn/${mod.slug}#${resumeSectionId}`
+          : `/learn/${mod.slug}`;
       },
+      continueModule: () => continueModuleOf(state),
       resetAll: () => {
         // also clear the synced copy, otherwise it merges right back
         fetch("/api/progress", { method: "DELETE" }).catch(() => {});
         update(() => EMPTY_PROGRESS);
       },
     }),
-    [state, ready, syncStatus, update],
+    [state, ready, syncStatus, isSignedIn, update, markStarted],
   );
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

@@ -30,25 +30,23 @@ function OverallBar() {
 }
 
 function ModuleCard({ slug }: { slug: string }) {
-  const { moduleProgress } = useProgress();
+  const { moduleProgress, moduleHref } = useProgress();
   const mod = modules.find((m) => m.slug === slug)!;
-  const { done, total } = moduleProgress(mod);
+  const { done, total, status } = moduleProgress(mod);
   const ready = mod.status === "ready" && total > 0;
   return (
     <Link
-      href={`/learn/${mod.slug}`}
+      href={moduleHref(mod)}
       className="group flex flex-col rounded-xl border border-borderline bg-surface-1 p-4 transition-colors hover:border-borderline-strong"
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono text-[12px] text-ink-muted">{mod.id}</span>
         {ready ? (
-          done > 0 ? (
-            <span
-              className={`font-mono text-[11px] ${
-                done === total ? "text-good" : "text-series-4"
-              }`}
-            >
-              {done === total ? "✓ complete" : `${done}/${total}`}
+          status === "complete" ? (
+            <span className="font-mono text-[11px] text-good">✓ complete</span>
+          ) : status === "in-progress" ? (
+            <span className="font-mono text-[11px] text-series-4">
+              {done}/{total}
             </span>
           ) : (
             <span className="font-mono text-[11px] text-ink-muted">
@@ -65,6 +63,54 @@ function ModuleCard({ slug }: { slug: string }) {
         {mod.title}
       </div>
       <div className="mt-1 text-[13px] leading-5 text-ink-muted">{mod.tagline}</div>
+      {ready && status !== "not-started" ? (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-2">
+            <div
+              className={`h-full rounded-full ${
+                status === "complete" ? "bg-good" : "bg-series-4"
+              }`}
+              style={{ width: `${Math.max(Math.round((done / total) * 100), 3)}%` }}
+            />
+          </div>
+          {status === "in-progress" ? (
+            <span className="text-[11px] font-medium text-accent">Resume →</span>
+          ) : null}
+        </div>
+      ) : null}
+    </Link>
+  );
+}
+
+/** One-click return to the module in flight — the first thing a returning
+ *  reader wants, so it sits above the course map. */
+function ContinueCard() {
+  const { continueModule, moduleProgress, moduleHref, ready } = useProgress();
+  const mod = continueModule();
+  if (!ready || !mod) return null;
+  const { done, total, status, resumeSectionId } = moduleProgress(mod);
+  const section = mod.sections.find((s) => s.id === resumeSectionId);
+  const fresh = status === "not-started";
+  return (
+    <Link
+      href={moduleHref(mod)}
+      className="mt-6 flex max-w-xl flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft p-4 transition-colors hover:border-accent/60"
+    >
+      <div className="min-w-0">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+          {fresh ? "Start here" : "Continue"}
+        </div>
+        <div className="mt-0.5 truncate text-[15px] font-semibold text-ink">
+          {mod.id} · {mod.title}
+        </div>
+        <div className="mt-0.5 line-clamp-2 text-[13px] text-ink-muted">
+          {section ? section.title : mod.tagline}
+          {!fresh ? ` · ${done} of ${total} sections done` : ""}
+        </div>
+      </div>
+      <span className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+        {fresh ? "Start →" : "Resume →"}
+      </span>
     </Link>
   );
 }
@@ -87,6 +133,7 @@ export function Dashboard() {
           papers on emotions and the global workspace.
         </p>
         <OverallBar />
+        <ContinueCard />
       </header>
 
       <div className="mt-12 space-y-10">
