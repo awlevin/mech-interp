@@ -1,0 +1,613 @@
+/* ============================================================
+   SLOP UI — DESIGN TOKENS
+   ============================================================
+   In today's fast-paced digital landscape, design tokens aren't
+   just variables — they're a shared vocabulary. A tapestry, if
+   you will. We will. We already did.
+   ============================================================ */
+
+:root {
+  /* ---- Colors. Every single one is a gradient. This is non-negotiable. ---- */
+  --slop-purple: #8b5cf6;
+  --slop-blurple: #6366f1;
+  --slop-blue: #3b82f6;
+  --slop-cyan: #22d3ee;
+  --slop-pink: #ec4899;
+  --slop-hallucination-green: #34d399;
+  --slop-warning-but-make-it-fun: #fbbf24;
+
+  --slop-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 45%, #3b82f6 100%);
+  --slop-gradient-loud: linear-gradient(135deg, #ec4899 0%, #a855f7 35%, #6366f1 70%, #22d3ee 100%);
+  --slop-gradient-subtle: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+
+  --slop-void: #0b0716;
+  --slop-void-2: #120b22;
+  --slop-surface: rgba(255, 255, 255, 0.05);
+  --slop-border: rgba(255, 255, 255, 0.1);
+  --slop-text: #f4f1ff;
+  --slop-text-dim: #a89fc7;
+
+  /* ---- Border radii. If it isn't rounded, is it even shipped? ---- */
+  --radius-rounded: 12px;
+  --radius-rounder: 18px;
+  --radius-roundest: 28px;
+  --radius-friend-shaped: 999px;
+
+  /* ---- Spacing scale. Rigorously derived from vibes. ---- */
+  --space-smol: 4px;
+  --space-lil: 8px;
+  --space-normal-ish: 16px;
+  --space-chonky: 32px;
+  --space-absolute-unit: 64px;
+
+  /* ---- Elevation. Everything glows. Shadows are for things that block light.
+     Our components emit it. ---- */
+  --glow-sm: 0 0 20px rgba(139, 92, 246, 0.35);
+  --glow-md: 0 0 40px rgba(139, 92, 246, 0.45);
+  --glow-deranged: 0 0 80px rgba(168, 85, 247, 0.6), 0 0 30px rgba(59, 130, 246, 0.5);
+
+  /* ---- Typography. We use Inter. We do not load Inter. The intention is
+     what matters. ---- */
+  --font-slop: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================================
+   KEYFRAMES — motion is a core pillar of our brand tapestry
+   ============================================================ */
+
+@keyframes slop-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slop-gradient-drift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes slop-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes slop-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes slop-think {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.35; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slop-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slop-sparkle-pop {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
+}
+
+/* ============================================================
+   SparkleButton — the cornerstone of any serious design system
+   ============================================================ */
+
+.slop-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-lil);
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--radius-friend-shaped);
+  font-family: var(--font-slop);
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: var(--slop-gradient);
+  background-size: 200% 200%;
+  animation: slop-gradient-drift 4s ease infinite;
+  box-shadow: var(--glow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slop-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: var(--glow-md);
+}
+
+.slop-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.slop-btn--ultra {
+  background: var(--slop-gradient-loud);
+  background-size: 300% 300%;
+  animation: slop-gradient-drift 2s ease infinite;
+  box-shadow: var(--glow-deranged);
+  font-size: 18px;
+  padding: 18px 36px;
+}
+
+.slop-btn--ghost {
+  background: var(--slop-gradient-subtle);
+  border: 1px solid var(--slop-border);
+  animation: none;
+  box-shadow: none;
+  color: var(--slop-text);
+}
+
+.slop-btn--ghost:hover {
+  box-shadow: var(--glow-sm);
+}
+
+.slop-btn:disabled {
+  opacity: 0.6;
+  cursor: wait; /* not "not-allowed" — everything is allowed, just slower */
+}
+
+/* ============================================================
+   GradientText
+   ============================================================ */
+
+.slop-gradient-text {
+  background: var(--slop-gradient-loud);
+  background-size: 300% 300%;
+  animation: slop-gradient-drift 6s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-slop);
+  font-weight: 800;
+}
+
+/* ============================================================
+   DelveCard — glassmorphism is a personality
+   ============================================================ */
+
+.slop-card {
+  position: relative;
+  padding: var(--space-chonky);
+  border-radius: var(--radius-roundest);
+  background: var(--slop-surface);
+  border: 1px solid var(--slop-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-family: var(--font-slop);
+  color: var(--slop-text);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
+}
+
+.slop-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--slop-gradient-subtle);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.slop-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glow-md);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.slop-card:hover::before {
+  opacity: 1;
+}
+
+.slop-card__title {
+  margin: 0 0 var(--space-normal-ish);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.slop-card__body {
+  margin: 0;
+  color: var(--slop-text-dim);
+  line-height: 1.6;
+}
+
+.slop-card__delve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-normal-ish);
+  font-weight: 600;
+  background: var(--slop-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+/* ============================================================
+   AIChatBubble
+   ============================================================ */
+
+.slop-chat {
+  display: flex;
+  gap: var(--space-normal-ish);
+  font-family: var(--font-slop);
+  max-width: 560px;
+}
+
+.slop-chat--user {
+  flex-direction: row-reverse;
+}
+
+.slop-chat__avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-friend-shaped);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: var(--slop-gradient);
+  box-shadow: var(--glow-sm);
+}
+
+.slop-chat--user .slop-chat__avatar {
+  background: var(--slop-surface);
+  border: 1px solid var(--slop-border);
+  box-shadow: none;
+}
+
+.slop-chat__bubble {
+  padding: var(--space-normal-ish) 20px;
+  border-radius: var(--radius-rounder);
+  border-top-left-radius: var(--space-smol);
+  background: var(--slop-surface);
+  border: 1px solid var(--slop-border);
+  color: var(--slop-text);
+  line-height: 1.6;
+  backdrop-filter: blur(12px);
+}
+
+.slop-chat--user .slop-chat__bubble {
+  border-top-left-radius: var(--radius-rounder);
+  border-top-right-radius: var(--space-smol);
+  background: var(--slop-gradient-subtle);
+}
+
+.slop-chat__disclaimer {
+  display: block;
+  margin-top: var(--space-lil);
+  font-size: 11px;
+  color: var(--slop-text-dim);
+  font-style: italic;
+}
+
+/* ============================================================
+   ThinkingDots
+   ============================================================ */
+
+.slop-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-normal-ish);
+  font-family: var(--font-slop);
+  color: var(--slop-text-dim);
+  font-size: 15px;
+}
+
+.slop-thinking__dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.slop-thinking__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-friend-shaped);
+  background: var(--slop-gradient);
+  animation: slop-think 1.2s infinite ease-in-out;
+}
+
+.slop-thinking__dot:nth-child(2) { animation-delay: 0.15s; }
+.slop-thinking__dot:nth-child(3) { animation-delay: 0.3s; }
+
+.slop-thinking__label {
+  font-style: italic;
+}
+
+/* ============================================================
+   PromptInput
+   ============================================================ */
+
+.slop-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lil);
+  width: 100%;
+  max-width: 640px;
+  font-family: var(--font-slop);
+}
+
+.slop-prompt__box {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-lil);
+  padding: var(--space-normal-ish);
+  border-radius: var(--radius-rounder);
+  background: var(--slop-surface);
+  border: 1px solid var(--slop-border);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slop-prompt__box:focus-within {
+  border-color: var(--slop-purple);
+  box-shadow: var(--glow-sm);
+}
+
+.slop-prompt__input {
+  flex: 1;
+  min-height: 48px;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--slop-text);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.slop-prompt__input::placeholder {
+  color: var(--slop-text-dim);
+}
+
+.slop-prompt__send {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-rounded);
+  background: var(--slop-gradient);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: var(--glow-sm);
+  transition: transform 0.15s ease;
+}
+
+.slop-prompt__send:hover {
+  transform: scale(1.08);
+}
+
+.slop-prompt__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--slop-text-dim);
+  padding: 0 var(--space-lil);
+}
+
+/* ============================================================
+   HallucinationBadge / TrustBadge
+   ============================================================ */
+
+.slop-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-friend-shaped);
+  font-family: var(--font-slop);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: var(--slop-hallucination-green);
+}
+
+.slop-badge--warn {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: var(--slop-warning-but-make-it-fun);
+}
+
+.slop-badge--gradient {
+  background: var(--slop-gradient-subtle);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: var(--slop-text);
+}
+
+.slop-badge__asterisk {
+  opacity: 0.7;
+  cursor: help;
+}
+
+/* ============================================================
+   EternalSkeleton — the loading state is the destination
+   ============================================================ */
+
+.slop-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lil);
+  width: 100%;
+  max-width: 480px;
+}
+
+.slop-skeleton__line {
+  height: 14px;
+  border-radius: var(--radius-friend-shaped);
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.1) 25%,
+    rgba(139, 92, 246, 0.3) 50%,
+    rgba(139, 92, 246, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: slop-shimmer 1.6s infinite linear;
+}
+
+.slop-skeleton__caption {
+  margin-top: var(--space-lil);
+  font-family: var(--font-slop);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--slop-text-dim);
+}
+
+/* ============================================================
+   RegenerateButton
+   ============================================================ */
+
+.slop-regen {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-lil);
+  padding: 10px 20px;
+  border-radius: var(--radius-friend-shaped);
+  border: 1px solid var(--slop-border);
+  background: var(--slop-surface);
+  color: var(--slop-text);
+  font-family: var(--font-slop);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slop-regen:hover {
+  border-color: var(--slop-purple);
+  box-shadow: var(--glow-sm);
+}
+
+.slop-regen__icon--spinning {
+  display: inline-block;
+  animation: slop-spin 0.8s linear infinite;
+}
+
+.slop-regen__apology {
+  font-family: var(--font-slop);
+  margin-top: var(--space-lil);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--slop-text-dim);
+}
+
+/* ============================================================
+   EmDash — typography, elevated
+   ============================================================ */
+
+.slop-emdash {
+  background: var(--slop-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   RocketList
+   ============================================================ */
+
+.slop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-slop);
+  color: var(--slop-text);
+}
+
+.slop-list__item {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  line-height: 1.6;
+}
+
+.slop-list__emoji {
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   TestimonialCard
+   ============================================================ */
+
+.slop-testimonial {
+  padding: var(--space-chonky);
+  border-radius: var(--radius-roundest);
+  background: var(--slop-surface);
+  border: 1px solid var(--slop-border);
+  backdrop-filter: blur(20px);
+  font-family: var(--font-slop);
+  max-width: 420px;
+}
+
+.slop-testimonial__stars {
+  letter-spacing: 2px;
+  margin-bottom: var(--space-normal-ish);
+}
+
+.slop-testimonial__quote {
+  margin: 0 0 var(--space-normal-ish);
+  color: var(--slop-text);
+  line-height: 1.65;
+  font-size: 16px;
+}
+
+.slop-testimonial__person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slop-testimonial__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-friend-shaped);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: var(--slop-gradient);
+  box-shadow: var(--glow-sm);
+}
+
+.slop-testimonial__name {
+  font-weight: 700;
+  color: var(--slop-text);
+  font-size: 14px;
+}
+
+.slop-testimonial__title {
+  color: var(--slop-text-dim);
+  font-size: 13px;
+}
+
+/* ============================================================
+   MadeWithAI
+   ============================================================ */
+
+.slop-made-with {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-lil);
+  padding: 8px 16px;
+  border-radius: var(--radius-friend-shaped);
+  border: 1px solid var(--slop-border);
+  background: var(--slop-surface);
+  font-family: var(--font-slop);
+  font-size: 13px;
+  color: var(--slop-text-dim);
+  animation: slop-float 3s ease-in-out infinite;
+}
