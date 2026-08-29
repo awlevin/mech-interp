@@ -65,10 +65,12 @@ export function Slider({
   return (
     <label className="block">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[12px] font-medium text-ink-secondary sm:text-[13px]">
+        <span className="min-w-0 text-[12px] font-medium text-ink-secondary sm:text-[13px]">
           {label}
         </span>
-        <span className="font-mono text-[12px] text-ink sm:text-[13px]">
+        {/* The readout is one atomic token — let the prose label wrap instead,
+            so values like "0.950 (density 0.050)" never break mid-parenthesis. */}
+        <span className="shrink-0 whitespace-nowrap font-mono text-[12px] text-ink sm:text-[13px]">
           {format ? format(value) : value}
         </span>
       </div>

@@ -412,12 +412,14 @@ export function SuperpositionTrainer() {
               <div className="mb-2 text-[12px] font-medium text-ink-secondary">
                 per feature
               </div>
-              <table className="w-full text-[12px]">
+              {/* border-spacing gives the numeric columns a gutter: without it
+                  the left-aligned ‖Wᵢ‖ runs straight into Iᵢ and bᵢ. */}
+              <table className="-mx-1 w-[calc(100%+0.5rem)] border-separate border-spacing-x-1 border-spacing-y-0 text-[12px]">
                 <thead>
                   <tr className="text-ink-muted">
                     <th className="pb-1 text-left font-medium">feat</th>
                     <th className="pb-1 text-left font-medium">‖Wᵢ‖</th>
-                    <th className="pb-1 text-left font-medium">Iᵢ</th>
+                    <th className="pb-1 text-right font-medium">Iᵢ</th>
                     <th className="pb-1 text-right font-medium">bᵢ</th>
                     <th className="pb-1 text-right font-medium">dim/feat</th>
                   </tr>
@@ -440,7 +442,7 @@ export function SuperpositionTrainer() {
                           <span className="text-ink">{norms[i].toFixed(2)}</span>
                         </span>
                       </td>
-                      <td className="py-0.5 text-ink-secondary">
+                      <td className="py-0.5 text-right text-ink-secondary">
                         {Math.pow(decay, i).toFixed(2)}
                       </td>
                       <td className="py-0.5 text-right text-ink-secondary">

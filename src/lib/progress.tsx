@@ -161,6 +161,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   // hydrate from localStorage after mount (SSR-safe)
   useEffect(() => {
+    // localStorage cannot be read during render without breaking hydration,
+    // so the first read has to happen in a mount effect. This is the one
+    // legitimate setState-in-an-effect here, and it runs exactly once.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(load());
     setReady(true);
     const onStorage = (e: StorageEvent) => {
